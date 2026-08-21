@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIB App — Dynamic Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f1117;
+    color: #e4e4e7;
+    padding: 40px 20px;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #71717a;
+    font-size: 14px;
+    margin-bottom: 48px;
+  }
+
+  /* Layer containers */
+  .layer {
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .layer-header {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .layer-header .emoji { font-size: 22px; }
+  .layer-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Flutter Layer */
+  .flutter-layer {
+    background: linear-gradient(135deg, #1e293b 0%, #172033 100%);
+    border: 1px solid #2563eb33;
+  }
+  .flutter-layer .layer-header { color: #60a5fa; }
+  .flutter-badge { background: #2563eb22; color: #60a5fa; }
+
+  /* Backend Layer */
+  .backend-layer {
+    background: linear-gradient(135deg, #1a2e1a 0%, #162016 100%);
+    border: 1px solid #22c55e33;
+  }
+  .backend-layer .layer-header { color: #4ade80; }
+  .backend-badge { background: #22c55e22; color: #4ade80; }
+
+  /* DB Layer */
+  .db-layer {
+    background: linear-gradient(135deg, #2d1f0e 0%, #1f1708 100%);
+    border: 1px solid #f59e0b33;
+  }
+  .db-layer .layer-header { color: #fbbf24; }
+  .db-badge { background: #f59e0b22; color: #fbbf24; }
+
+  /* Grid layouts */
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .grid-5 {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+  }
+
+  @media (max-width: 800px) {
+    .grid-3, .grid-4, .grid-5 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 500px) {
+    .grid-3, .grid-4, .grid-5, .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  /* Cards */
+  .card {
+    background: #ffffff08;
+    border: 1px solid #ffffff10;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-item {
+    font-size: 12px;
+    color: #a1a1aa;
+    padding: 3px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.4;
+  }
+  .card-item .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+
+  .dot-blue { background: #60a5fa; }
+  .dot-green { background: #4ade80; }
+  .dot-orange { background: #fbbf24; }
+  .dot-red { background: #f87171; }
+  .dot-purple { background: #a78bfa; }
+  .dot-cyan { background: #22d3ee; }
+
+  /* Static warning card */
+  .static-card {
+    border-color: #f8717133;
+    background: #f8717108;
+  }
+  .static-card .card-title { color: #f87171; }
+  .static-tag {
+    font-size: 9px;
+    background: #f8717122;
+    color: #f87171;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .dynamic-tag {
+    font-size: 9px;
+    background: #4ade8022;
+    color: #4ade80;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  /* Arrow connectors */
+  .arrow-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+    gap: 2px;
+  }
+  .arrow-line {
+    width: 3px;
+    height: 30px;
+    border-radius: 2px;
+  }
+  .arrow-label {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 20px;
+  }
+  .arrow-blue .arrow-line { background: linear-gradient(#2563eb, #60a5fa); }
+  .arrow-blue .arrow-label { background: #2563eb22; color: #60a5fa; }
+  .arrow-green .arrow-line { background: linear-gradient(#22c55e, #4ade80); }
+  .arrow-green .arrow-label { background: #22c55e22; color: #4ade80; }
+  .arrow-orange .arrow-line { background: linear-gradient(#f59e0b, #fbbf24); }
+  .arrow-orange .arrow-label { background: #f59e0b22; color: #fbbf24; }
+
+  .arrow-icon { font-size: 16px; }
+
+  /* Key insight */
+  .insight {
+    margin-top: 16px;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .insight-blue { background: #2563eb15; color: #60a5fa; border: 1px solid #2563eb33; }
+  .insight-green { background: #22c55e15; color: #4ade80; border: 1px solid #22c55e33; }
+  .insight-orange { background: #f59e0b15; color: #fbbf24; border: 1px solid #f59e0b33; }
+
+  /* Full width card */
+  .full-card {
+    background: #ffffff08;
+    border: 1px solid #ffffff10;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 14px;
+  }
+
+  /* Section divider */
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 20px 0 14px;
+    opacity: 0.6;
+  }
+
+  /* Flow sections */
+  .flow-section {
+    margin-top: 32px;
+  }
+  .flow-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 700px) {
+    .flow-grid { grid-template-columns: 1fr; }
+  }
+  .flow-card {
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .flow-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .flow-step {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+  .step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-text {
+    font-size: 13px;
+    color: #d4d4d8;
+    line-height: 1.5;
+  }
+  .step-sub {
+    font-size: 11px;
+    color: #71717a;
+    margin-top: 2px;
+  }
+
+  .reg-card {
+    background: linear-gradient(135deg, #1e1533 0%, #160f2a 100%);
+    border: 1px solid #7c3aed33;
+  }
+  .reg-card h3 { color: #a78bfa; }
+  .reg-card .step-num { background: #7c3aed33; color: #a78bfa; }
+
+  .login-card {
+    background: linear-gradient(135deg, #0c2d2d 0%, #0a1f1f 100%);
+    border: 1px solid #06b6d433;
+  }
+  .login-card h3 { color: #22d3ee; }
+  .login-card .step-num { background: #06b6d433; color: #22d3ee; }
+
+  .flow-insight {
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+  }
+  .flow-insight-purple { background: #7c3aed15; color: #a78bfa; border: 1px solid #7c3aed33; }
+  .flow-insight-cyan { background: #06b6d415; color: #22d3ee; border: 1px solid #06b6d433; }
+
+  /* Summary */
+  .summary {
+    margin-top: 32px;
+    border-radius: 16px;
+    padding: 28px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16162a 100%);
+    border: 1px solid #ffffff15;
+  }
+  .summary h2 {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: #e4e4e7;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 600px) {
+    .summary-grid { grid-template-columns: 1fr; }
+  }
+  .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #ffffff06;
+    border: 1px solid #ffffff08;
+  }
+  .summary-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* External systems */
+  .ext-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .ext-chip {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: #f59e0b12;
+    border: 1px solid #f59e0b33;
+    color: #fbbf24;
+  }
+
+  /* Cache bar */
+  .cache-bar {
+    margin-top: 14px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    background: #a855f715;
+    border: 1px solid #a855f733;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #c084fc;
+  }
+
+  .mt-14 { margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>CIB APP — TO'LIQ DYNAMIC ARXITEKTURA</h1>
+  <p class="subtitle">Registration • Login • Cards • Payments • Notifications</p>
+
+  <!-- ===================== FLUTTER LAYER ===================== -->
+  <div class="layer flutter-layer">
+    <div class="layer-header">
+      <span class="emoji">📱</span>
+      FLUTTER APP — 3-Qatlam (KO'Z)
+      <span class="layer-badge flutter-badge">Faqat chizadi</span>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title" style="color:#60a5fa">
+          📋 Universal Ekranlar
+          <span class="dynamic-tag">DYNAMIC</span>
+        </div>
+        <div class="card-item"><span class="dot dot-blue"></span>DynamicFormScreen — har qanday forma</div>
+        <div class="card-item"><span class="dot dot-blue"></span>DynamicListScreen — ro'yxatlar</div>
+        <div class="card-item"><span class="dot dot-blue"></span>DynamicCardScreen — kartalar</div>
+        <div class="card-item"><span class="dot dot-blue"></span>DynamicDetailScreen — tafsilotlar</div>
+        <div class="card-item"><span class="dot dot-blue"></span>DynamicStepperScreen — qadam-qadam</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="color:#60a5fa">
+          🧩 Field Factory
+          <span class="dynamic-tag">DYNAMIC</span>
+        </div>
+        <div class="card-item"><span class="dot dot-blue"></span>"phone" → PhoneInput</div>
+        <div class="card-item"><span class="dot dot-blue"></span>"otp" → OTPInput</div>
+        <div class="card-item"><span class="dot dot-blue"></span>"password" → PasswordInput</div>
+        <div class="card-item"><span class="dot dot-blue"></span>"pin" → PinInput</div>
+        <div class="card-item"><span class="dot dot-blue"></span>"date" → DatePicker</div>
+        <div class="card-item"><span class="dot dot-blue"></span>"dropdown" → Dropdown</div>
+        <div class="card-item"><span class="dot dot-blue"></span>"card" → CardInput</div>
+      </div>
+
+      <div class="card static-card">
+        <div class="card-title">
+          🔐 Static Modullar
+          <span class="static-tag">STATIC</span>
+        </div>
+        <div class="card-item"><span class="dot dot-red"></span>BiometricWidget</div>
+        <div class="card-item"><span class="dot dot-red"></span>QR Scanner</div>
+        <div class="card-item"><span class="dot dot-red"></span>NFC Payment</div>
+        <div class="card-item"><span class="dot dot-red"></span>MapWidget / ChartWidget</div>
+        <div class="card-item"><span class="dot dot-red"></span>Push Notification</div>
+      </div>
+    </div>
+
+    <div class="grid-2 mt-14">
+      <div class="card">
+        <div class="card-title" style="color:#60a5fa">🌐 Core Services</div>
+        <div class="card-item"><span class="dot dot-blue"></span>ApiService — REST chaqiruvlar</div>
+        <div class="card-item"><span class="dot dot-blue"></span>CacheService — config saqlash</div>
+        <div class="card-item"><span class="dot dot-blue"></span>TokenService — JWT boshqarish</div>
+        <div class="card-item"><span class="dot dot-blue"></span>NavigationHandler — ekranlar routing</div>
+      </div>
+      <div class="card static-card">
+        <div class="card-title">🛡️ Xavfsizlik <span class="static-tag">STATIC</span></div>
+        <div class="card-item"><span class="dot dot-red"></span>SSL Pinning — faqat o'z serveriga</div>
+        <div class="card-item"><span class="dot dot-red"></span>Root/Jailbreak Detection</div>
+        <div class="card-item"><span class="dot dot-red"></span>Code Obfuscation</div>
+        <div class="card-item"><span class="dot dot-red"></span>Device Binding + Encryption</div>
+      </div>
+    </div>
+
+    <div class="insight insight-blue">💡 Flutter HECH NARSA BILMAYDI — Backend'dan JSON oladi va CHIZADI. Yangi xizmat qo'shilsa Flutter'ga TEGMASANG bo'ladi.</div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow-section arrow-blue">
+    <div class="arrow-line"></div>
+    <span class="arrow-icon">▼</span>
+    <div class="arrow-label">REST API (JSON)</div>
+    <div class="arrow-line"></div>
+  </div>
+
+  <!-- ===================== BACKEND LAYER ===================== -->
+  <div class="layer backend-layer">
+    <div class="layer-header">
+      <span class="emoji">⚙️</span>
+      SPRING BOOT BACKEND — 2-Qatlam (QO'L)
+      <span class="layer-badge backend-badge">Bajaradi</span>
+    </div>
+
+    <!-- API Gateway -->
+    <div class="full-card" style="text-align:center; border-color:#4ade8033;">
+      <div style="font-size:14px; font-weight:700; color:#4ade80; margin-bottom:6px;">🚪 DynamicServiceController — YAGONA kirish nuqtasi</div>
+      <div style="font-size:12px; color:#71717a;">/api/auth/** &nbsp; • &nbsp; /api/services/** &nbsp; • &nbsp; /api/cards/** &nbsp; • &nbsp; /api/payments/**</div>
+    </div>
+
+    <!-- Router -->
+    <div class="full-card" style="text-align:center; border-color:#4ade8033; margin-top:10px; background:#4ade8008;">
+      <div style="font-size:13px; font-weight:700; color:#4ade80;">🧭 ServiceRouter — DB'dan qaysi service ekanini aniqlaydi va yo'naltiradi</div>
+    </div>
+
+    <div class="section-label" style="color:#4ade80;">Universal Engine</div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title" style="color:#4ade80;">✅ DynamicValidator</div>
+        <div style="font-size:11px; color:#71717a; margin-bottom:8px;">Chain of Responsibility</div>
+        <div class="card-item"><span class="dot dot-green"></span>@Component("uz_phone")</div>
+        <div class="card-item"><span class="dot dot-green"></span>@Component("pinfl_format")</div>
+        <div class="card-item"><span class="dot dot-green"></span>@Component("password_strength")</div>
+        <div class="card-item"><span class="dot dot-green"></span>@Component("luhn_check")</div>
+        <div class="card-item"><span class="dot dot-green"></span>@Component("min_age_18")</div>
+        <div style="font-size:10px; color:#4ade80; margin-top:8px;">Yangi tekshiruv = yangi class</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="color:#4ade80;">⚡ ActionExecutor</div>
+        <div style="font-size:11px; color:#71717a; margin-bottom:8px;">Reflection — DB'dan chaqiradi</div>
+        <div class="card-item"><span class="dot dot-green"></span>@Component("authAction")</div>
+        <div class="card-item"><span class="dot dot-green"></span>@Component("cardAction")</div>
+        <div class="card-item"><span class="dot dot-green"></span>@Component("paymentAction")</div>
+        <div class="card-item"><span class="dot dot-green"></span>@Component("transferAction")</div>
+        <div class="card-item"><span class="dot dot-green"></span>@Component("communalAction")</div>
+        <div style="font-size:10px; color:#4ade80; margin-top:8px;">Yangi xizmat = yangi class</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="color:#4ade80;">📤 PostActionExecutor</div>
+        <div style="font-size:11px; color:#71717a; margin-bottom:8px;">Bajarilgandan keyin</div>
+        <div class="card-item"><span class="dot dot-green"></span>navigate → ekranga o'tish</div>
+        <div class="card-item"><span class="dot dot-green"></span>notify → xabar yuborish</div>
+        <div class="card-item"><span class="dot dot-green"></span>fee → komissiya hisoblash</div>
+        <div class="card-item"><span class="dot dot-green"></span>log → audit tarix yozish</div>
+        <div class="card-item"><span class="dot dot-green"></span>refresh → cache tozalash</div>
+      </div>
+    </div>
+
+    <!-- Response Builder -->
+    <div class="full-card mt-14" style="text-align:center; border-color:#4ade8033; background:#4ade8008;">
+      <div style="font-size:13px; font-weight:700; color:#4ade80;">🔧 ResponseBuilder — data + ui + fields + actions + rules → BITTA JSON</div>
+    </div>
+
+    <div class="section-label" style="color:#4ade80;">Dynamic Servislar</div>
+
+    <div class="grid-4">
+      <div class="card">
+        <div class="card-title" style="color:#4ade80;">💰 FeeService</div>
+        <div class="card-item"><span class="dot dot-green"></span>percent</div>
+        <div class="card-item"><span class="dot dot-green"></span>fixed</div>
+        <div class="card-item"><span class="dot dot-green"></span>tiered</div>
+        <div class="card-item"><span class="dot dot-green"></span>mixed</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#4ade80;">📨 NotificationService</div>
+        <div class="card-item"><span class="dot dot-green"></span>sms</div>
+        <div class="card-item"><span class="dot dot-green"></span>telegram</div>
+        <div class="card-item"><span class="dot dot-green"></span>email</div>
+        <div class="card-item"><span class="dot dot-green"></span>push</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#4ade80;">🔌 ProviderService</div>
+        <div class="card-item"><span class="dot dot-green"></span>uzcard</div>
+        <div class="card-item"><span class="dot dot-green"></span>humo</div>
+        <div class="card-item"><span class="dot dot-green"></span>visa</div>
+        <div class="card-item"><span class="dot dot-green"></span>wallet</div>
+      </div>
+      <div class="card static-card">
+        <div class="card-title">🔒 Security <span class="static-tag">STATIC</span></div>
+        <div class="card-item"><span class="dot dot-red"></span>BCrypt hashing</div>
+        <div class="card-item"><span class="dot dot-red"></span>JWT token</div>
+        <div class="card-item"><span class="dot dot-red"></span>AES shifrlash</div>
+        <div class="card-item"><span class="dot dot-red"></span>OTP generator</div>
+      </div>
+    </div>
+
+    <!-- External systems -->
+    <div class="full-card mt-14" style="border-color:#fbbf2433;">
+      <div style="font-size:13px; font-weight:700; color:#fbbf24; margin-bottom:8px;">🌍 Tashqi tizimlar (Adapter Pattern)</div>
+      <div class="ext-grid">
+        <span class="ext-chip">Uzcard API</span>
+        <span class="ext-chip">Humo API</span>
+        <span class="ext-chip">Visa API</span>
+        <span class="ext-chip">SMS Gateway</span>
+        <span class="ext-chip">Telegram Bot</span>
+        <span class="ext-chip">MyID / DIA</span>
+        <span class="ext-chip">CBU Kurs</span>
+        <span class="ext-chip">Payme</span>
+        <span class="ext-chip">Click</span>
+      </div>
+    </div>
+
+    <!-- Cache -->
+    <div class="cache-bar">⚡ REDIS CACHE — config cache &nbsp;|&nbsp; session cache &nbsp;|&nbsp; OTP cache &nbsp;|&nbsp; rate limit &nbsp;|&nbsp; device binding</div>
+
+    <div class="insight insight-green">💡 Backend — UNIVERSAL engine (bir marta yoziladi) + ACTION classlar (har xizmat uchun). Yangi xizmat = yangi @Component</div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow-section arrow-orange">
+    <div class="arrow-line"></div>
+    <span class="arrow-icon">▼</span>
+    <div class="arrow-label">JPA / JDBC</div>
+    <div class="arrow-line"></div>
+  </div>
+
+  <!-- ===================== DB LAYER ===================== -->
+  <div class="layer db-layer">
+    <div class="layer-header">
+      <span class="emoji">🗄️</span>
+      ORACLE DATABASE — 1-Qatlam (MIYA)
+      <span class="layer-badge db-badge">Hammani biladi</span>
+    </div>
+
+    <div class="section-label" style="color:#fbbf24;">🔄 Dynamic Config Tablelar</div>
+
+    <div class="grid-4">
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24;">auth_config</div>
+        <div class="card-item"><span class="dot dot-orange"></span>login_methods</div>
+        <div class="card-item"><span class="dot dot-orange"></span>otp_length / expire</div>
+        <div class="card-item"><span class="dot dot-orange"></span>password_rules</div>
+        <div class="card-item"><span class="dot dot-orange"></span>pin_length</div>
+        <div class="card-item"><span class="dot dot-orange"></span>session_timeout</div>
+        <div class="card-item"><span class="dot dot-orange"></span>block_config</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24;">form_field_config</div>
+        <div class="card-item"><span class="dot dot-orange"></span>step_number</div>
+        <div class="card-item"><span class="dot dot-orange"></span>field_name / type</div>
+        <div class="card-item"><span class="dot dot-orange"></span>label_uz / label_ru</div>
+        <div class="card-item"><span class="dot dot-orange"></span>is_required / sort</div>
+        <div class="card-item"><span class="dot dot-orange"></span>extra_config (JSON)</div>
+        <div class="card-item"><span class="dot dot-orange"></span>mask / placeholder</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24;">service_config</div>
+        <div class="card-item"><span class="dot dot-orange"></span>code / name</div>
+        <div class="card-item"><span class="dot dot-orange"></span>action_class / method</div>
+        <div class="card-item"><span class="dot dot-orange"></span>icon / category</div>
+        <div class="card-item"><span class="dot dot-orange"></span>is_active / sort</div>
+        <div class="card-item"><span class="dot dot-orange"></span>ui_config (JSON)</div>
+        <div class="card-item"><span class="dot dot-orange"></span>post_actions</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24;">ui_config</div>
+        <div class="card-item"><span class="dot dot-orange"></span>bg_color / text_color</div>
+        <div class="card-item"><span class="dot dot-orange"></span>icon_url / logo_url</div>
+        <div class="card-item"><span class="dot dot-orange"></span>field_labels (i18n)</div>
+        <div class="card-item"><span class="dot dot-orange"></span>action_buttons</div>
+        <div class="card-item"><span class="dot dot-orange"></span>visibility_rules</div>
+        <div class="card-item"><span class="dot dot-orange"></span>card_style</div>
+      </div>
+    </div>
+
+    <div class="grid-4 mt-14">
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24;">fee_config</div>
+        <div class="card-item"><span class="dot dot-orange"></span>payment_type</div>
+        <div class="card-item"><span class="dot dot-orange"></span>fee_type</div>
+        <div class="card-item"><span class="dot dot-orange"></span>fee_value / min / max</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24;">notification_config</div>
+        <div class="card-item"><span class="dot dot-orange"></span>event_type</div>
+        <div class="card-item"><span class="dot dot-orange"></span>channel + template</div>
+        <div class="card-item"><span class="dot dot-orange"></span>lang (uz/ru/en)</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24;">provider_config</div>
+        <div class="card-item"><span class="dot dot-orange"></span>code / base_url</div>
+        <div class="card-item"><span class="dot dot-orange"></span>auth_type / timeout</div>
+        <div class="card-item"><span class="dot dot-orange"></span>retry_count</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24;">validation_config</div>
+        <div class="card-item"><span class="dot dot-orange"></span>field + validator_type</div>
+        <div class="card-item"><span class="dot dot-orange"></span>error_message (uz/ru)</div>
+        <div class="card-item"><span class="dot dot-orange"></span>sort_order</div>
+      </div>
+    </div>
+
+    <div class="section-label" style="color:#fbbf24;">📊 Biznes Data Tablelar</div>
+
+    <div class="grid-5">
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24; font-size:12px;">users</div>
+        <div class="card-item"><span class="dot dot-orange"></span>phone, pinfl</div>
+        <div class="card-item"><span class="dot dot-orange"></span>password, pin</div>
+        <div class="card-item"><span class="dot dot-orange"></span>status</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24; font-size:12px;">cards</div>
+        <div class="card-item"><span class="dot dot-orange"></span>user_id, number</div>
+        <div class="card-item"><span class="dot dot-orange"></span>provider, status</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24; font-size:12px;">transactions</div>
+        <div class="card-item"><span class="dot dot-orange"></span>amount, fee</div>
+        <div class="card-item"><span class="dot dot-orange"></span>sender, receiver</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24; font-size:12px;">otp_codes</div>
+        <div class="card-item"><span class="dot dot-orange"></span>phone, code</div>
+        <div class="card-item"><span class="dot dot-orange"></span>attempts, expire</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:#fbbf24; font-size:12px;">audit_log</div>
+        <div class="card-item"><span class="dot dot-orange"></span>user, action</div>
+        <div class="card-item"><span class="dot dot-orange"></span>ip, device</div>
+      </div>
+    </div>
+
+    <div class="insight insight-orange">💡 DB — NIMA qilinadi, QANDAY ko'rsatiladi, QANDAY tekshiriladi — hammasi SHU YERDA. O'zgartirish = UPDATE/INSERT — deploy kerak emas.</div>
+  </div>
+
+  <!-- ===================== AUTH FLOWS ===================== -->
+  <div class="flow-section">
+    <div class="flow-grid">
+      <!-- Registration -->
+      <div class="flow-card reg-card">
+        <h3><span>📝</span> Registration Oqimi</h3>
+
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div><div class="step-text">📞 Telefon raqam kiritish</div><div class="step-sub">validatsiya → OTP yuborish (Dynamic Notification)</div></div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div><div class="step-text">🔢 OTP tasdiqlash</div><div class="step-sub">5 xonali, 120 sek, max 3 urinish — DB config'dan</div></div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div><div class="step-text">👤 PINFL + Pasport + Tug'ilgan sana</div><div class="step-sub">MyID/DIA tashqi tekshiruv → yosh 18+ tekshiruv</div></div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <div><div class="step-text">🔒 Parol yaratish</div><div class="step-sub">Kuchlilik tekshiruv (DB rules) → BCrypt hash (STATIC)</div></div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">5</div>
+          <div><div class="step-text">⚫ PIN kod yaratish</div><div class="step-sub">4 xonali (DB config) → AES shifrlash (STATIC)</div></div>
+        </div>
+
+        <div class="flow-insight flow-insight-purple">✅ User yaratildi → JWT → Home. Barcha step'lar DB'dan keladi.</div>
+      </div>
+
+      <!-- Login -->
+      <div class="flow-card login-card">
+        <h3><span>🔑</span> Login Oqimi</h3>
+
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div><div class="step-text">📱 Login usulini tanlash</div><div class="step-sub">Telefon yoki PINFL — DB: login_methods config'dan</div></div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div><div class="step-text">🔒 Parol tekshirish</div><div class="step-sub">BCrypt.matches (STATIC) → 5 xato = bloklash (DB config)</div></div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div><div class="step-text">📱 Qurilma tekshirish</div><div class="step-sub">Yangi qurilma? → OTP tasdiqlash talab qiladi</div></div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <div><div class="step-text">⚫ PIN kod so'rash</div><div class="step-sub">PIN o'rnatilganmi? → so'ra. Yo'q → o'rnatdir</div></div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">5</div>
+          <div><div class="step-text">👆 Biometrika</div><div class="step-sub">Mavjud? → sozlashni taklif qil (DB: biometric_enabled)</div></div>
+        </div>
+
+        <div class="flow-insight flow-insight-cyan">✅ JWT token → Home. Post-login qadamlar DB'dan — tartib o'zgartiriladi.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SUMMARY ===================== -->
+  <div class="summary">
+    <h2>📌 XULOSA</h2>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span class="summary-dot" style="background:#60a5fa"></span>
+        <span><strong>FLUTTER</strong> — faqat chizadi, logika bilmaydi</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-dot" style="background:#4ade80"></span>
+        <span><strong>BACKEND</strong> — universal engine + @Component classlar</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-dot" style="background:#fbbf24"></span>
+        <span><strong>DATABASE</strong> — barcha config, form, UI, validatsiya</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-dot" style="background:#f87171"></span>
+        <span><strong>XAVFSIZLIK</strong> — BCrypt, JWT, SSL — STATIC kodda</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-dot" style="background:#a78bfa"></span>
+        <span><strong>YANGI XIZMAT</strong> = DB config + 1 Java class. Tamom.</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-dot" style="background:#22d3ee"></span>
+        <span><strong>FLUTTER O'ZGARMAYDI</strong> — deploy faqat backend</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

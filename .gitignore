@@ -1,0 +1,45 @@
+# Java / Maven
+backend/target/
+.verify-classes/
+*.class
+*.log
+
+# Flutter / Dart
+flutter/.dart_tool/
+flutter/build/
+flutter/coverage/
+flutter/.flutter-plugins
+flutter/.flutter-plugins-dependencies
+flutter/.packages
+flutter/android/local.properties
+flutter/ios/Flutter/Generated.xcconfig
+flutter/ios/Flutter/ephemeral/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+backend/src/main/resources/application-secrets*.yml
+backend/src/main/resources/application-secrets*.yaml
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
+credentials*.json
+service-account*.json
+*.credentials
+
+# OS
+.DS_Store
+Thumbs.db

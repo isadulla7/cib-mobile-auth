@@ -1,0 +1,45 @@
+name: Flutter CI
+
+on:
+  push:
+    paths:
+      - "flutter/**"
+      - ".github/workflows/flutter-ci.yml"
+  pull_request:
+    paths:
+      - "flutter/**"
+      - ".github/workflows/flutter-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate platform scaffolding
+        working-directory: flutter
+        run: flutter create . --platforms=android,ios
+
+      - name: Install dependencies
+        working-directory: flutter
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: flutter
+        run: flutter analyze
+
+      - name: Test
+        working-directory: flutter
+        run: flutter test

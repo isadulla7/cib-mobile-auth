@@ -1,0 +1,11 @@
+spring:
+  data:
+    redis:
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      cluster:
+        max-redirects: 5
+        nodes:
+          - ${REDIS_NODE_1}
+          - ${REDIS_NODE_2}
+          - ${REDIS_NODE_3}

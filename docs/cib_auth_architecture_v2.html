@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CIB Auth Architecture V2 — Production-Level Registration & Login</title>
+<style>
+:root{
+  --bg:#081018;--surface:#0d1722;--surface2:#111f2d;--border:#223044;
+  --text:#e8eef7;--muted:#8ea0b7;
+  --blue:#5aa7ff;--green:#4ade80;--amber:#fbbf24;--red:#fb7185;
+  --purple:#b78cff;--cyan:#22d3ee;--pink:#f472b6;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:
+radial-gradient(circle at 12% 0%,#12356055,transparent 28%),
+radial-gradient(circle at 88% 8%,#4d1b6e44,transparent 26%),
+var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55}
+.wrap{max-width:1280px;margin:auto;padding:34px 20px 80px}
+.hero{text-align:center;padding:52px 20px 30px}
+.kicker{display:inline-block;border:1px solid #5aa7ff55;background:#5aa7ff11;color:#8ec3ff;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.08em}
+h1{font-size:clamp(34px,5vw,70px);line-height:1.02;margin:18px auto 14px;max-width:1050px}
+.grad{background:linear-gradient(90deg,var(--blue),var(--purple),var(--cyan));-webkit-background-clip:text;color:transparent}
+.hero p{max-width:900px;margin:auto;color:var(--muted);font-size:17px}
+.topbar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:28px auto 0;max-width:1050px}
+.stat{background:#ffffff07;border:1px solid var(--border);border-radius:16px;padding:14px}
+.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}
+.section{margin-top:26px;background:linear-gradient(180deg,#0c1723ee,#0a141eee);border:1px solid var(--border);border-radius:22px;padding:24px;box-shadow:0 20px 60px #00000025}
+.section h2{margin:0 0 8px;font-size:27px}.sub{color:var(--muted);margin:0 0 20px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{background:#ffffff06;border:1px solid #ffffff12;border-radius:16px;padding:17px}
+.card h3{margin:0 0 8px;font-size:15px}.card p,.card li{color:#aebbd0;font-size:13px}
+.badge{font-size:10px;font-weight:900;padding:3px 7px;border-radius:999px;margin-left:6px}
+.dynamic{background:#4ade8019;color:#65ef98;border:1px solid #4ade8033}
+.static{background:#fb718519;color:#ff91a4;border:1px solid #fb718533}
+.policy{background:#fbbf2419;color:#ffd35d;border:1px solid #fbbf2433}
+.flow{display:flex;gap:10px;align-items:stretch;overflow-x:auto;padding-bottom:8px}
+.node{min-width:160px;flex:1;background:#ffffff07;border:1px solid #ffffff14;border-radius:14px;padding:14px;position:relative}
+.node:not(:last-child)::after{content:"→";position:absolute;right:-16px;top:42%;color:#607792;font-weight:900;z-index:2}
+.node b{display:block;font-size:13px;margin-bottom:5px}.node span{color:var(--muted);font-size:11px}
+.blue{border-color:#5aa7ff55}.green{border-color:#4ade8055}.amber{border-color:#fbbf2455}.red{border-color:#fb718555}.purple{border-color:#b78cff55}.cyan{border-color:#22d3ee55}
+.arch{display:grid;grid-template-columns:1.05fr 1.7fr 1.05fr;gap:16px;align-items:stretch}
+.layer{border-radius:18px;padding:18px;border:1px solid}.layer h3{margin:0 0 12px}.flutter{background:#10203a;border-color:#397ce455}.backend{background:#102319;border-color:#35ba6655}.data{background:#2b210f;border-color:#d99c2455}
+.item{background:#00000022;border:1px solid #ffffff10;border-radius:11px;padding:10px;margin:8px 0;font-size:12px}
+.arrowcol{display:flex;flex-direction:column;justify-content:center;color:#5e738d;text-align:center;font-weight:800}
+code,pre{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace}
+pre{background:#06101a;border:1px solid #1c2b3f;border-radius:14px;padding:16px;overflow:auto;color:#cfe4ff;font-size:12px;line-height:1.6}
+.pkg{columns:2;column-gap:28px}.pkg pre{break-inside:avoid}
+.tablewrap{overflow:auto;border-radius:14px;border:1px solid #24344a}
+table{border-collapse:collapse;width:100%;min-width:800px;background:#09131d}
+th,td{padding:11px 12px;border-bottom:1px solid #1b2a3d;text-align:left;font-size:12px}
+th{color:#8dc6ff;background:#0c1a28;position:sticky;top:0}td{color:#b8c7da}
+.state{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.state .s{padding:12px;border-radius:12px;text-align:center;border:1px solid #ffffff14;background:#ffffff06;font-size:11px}
+.warn{background:#fb718510;border:1px solid #fb718533;border-left:4px solid var(--red);padding:14px 16px;border-radius:12px;color:#ffd1d8}
+.good{background:#4ade8010;border:1px solid #4ade8033;border-left:4px solid var(--green);padding:14px 16px;border-radius:12px;color:#c9fbd8}
+.callout{background:linear-gradient(135deg,#163356,#2b1f4c);border:1px solid #669cff44;border-radius:16px;padding:18px;margin-top:15px}
+.small{font-size:11px;color:var(--muted)}
+.req{display:grid;grid-template-columns:70px 1fr;gap:10px;margin:10px 0}
+.method{font-weight:900;border-radius:9px;padding:8px;text-align:center;font-size:11px}.get{background:#5aa7ff18;color:#8dc6ff}.post{background:#4ade8018;color:#7cf0a2}
+.reqbody{background:#ffffff05;border:1px solid #ffffff10;border-radius:10px;padding:8px 11px;font-size:12px;color:#bdc9da}
+.footer{text-align:center;color:#6f8199;font-size:11px;padding:30px}
+@media(max-width:950px){.arch,.grid4,.grid3{grid-template-columns:1fr 1fr}.topbar{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.grid2,.arch,.grid4,.grid3,.state{grid-template-columns:1fr}.pkg{columns:1}.flow{display:grid}.node:not(:last-child)::after{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">CIB APP · AUTH DOMAIN · V2</div>
+    <h1>Production-Level <span class="grad">Registration & Login Architecture</span></h1>
+    <p>Backend-driven UI saqlanadi, lekin xavfsizlik va biznes invariantlari config ichiga ko‘milmaydi. DB — policy/config, Spring Boot — decision + execution, Flutter — controlled renderer.</p>
+    <div class="topbar">
+      <div class="stat"><b>5</b><span>Registration states</span></div>
+      <div class="stat"><b>6</b><span>Core auth services</span></div>
+      <div class="stat"><b>2</b><span>Primary data stores</span></div>
+      <div class="stat"><b>0</b><span>Raw reflection methods from DB</span></div>
+    </div>
+  </header>
+
+  <section class="section">
+    <h2>1. Asosiy arxitektura</h2>
+    <p class="sub">Eski “DB = miya” modelini xavfsizroq qilib qayta taqsimlaymiz.</p>
+    <div class="arch">
+      <div class="layer flutter">
+        <h3>📱 Flutter — Presentation</h3>
+        <div class="item">DynamicAuthScreen</div>
+        <div class="item">FieldRegistry / FieldFactory</div>
+        <div class="item">AuthFlowController</div>
+        <div class="item">SecureTokenStore</div>
+        <div class="item">DeviceCapabilityService</div>
+        <div class="item">BiometricBridge <span class="badge static">STATIC</span></div>
+      </div>
+      <div class="layer backend">
+        <h3>⚙️ Spring Boot — Brain + Execution</h3>
+        <div class="grid2">
+          <div>
+            <div class="item">AuthController</div>
+            <div class="item">RegistrationOrchestrator</div>
+            <div class="item">LoginOrchestrator</div>
+            <div class="item">AuthStateMachine</div>
+          </div>
+          <div>
+            <div class="item">PolicyResolver</div>
+            <div class="item">ValidationEngine</div>
+            <div class="item">CredentialService</div>
+            <div class="item">TokenService</div>
+          </div>
+        </div>
+        <div class="item">DeviceTrustService · OTPService · SessionService · AuditService</div>
+        <div class="item">Allowlisted ActionRegistry <span class="badge static">NO RAW REFLECTION</span></div>
+      </div>
+      <div class="layer data">
+        <h3>🗄️ Oracle + Redis — State & Policy</h3>
+        <div class="item">Oracle: users, credentials, devices, sessions, audit</div>
+        <div class="item">Oracle: auth_policy_version, auth_ui_config, validators</div>
+        <div class="item">Redis: OTP TTL + attempts</div>
+        <div class="item">Redis: rate limit + temporary flow state</div>
+        <div class="item">Redis: config cache + idempotency</div>
+      </div>
+    </div>
+    <div class="callout"><b>Qat’iy qoida:</b> DB “qaysi Java methodni chaqir” demaydi. DB faqat oldindan ruxsat berilgan <code>actionCode</code>, policy, UI va thresholdlarni beradi.</div>
+  </section>
+
+  <section class="section">
+    <h2>2. Dynamic vs Static chegarasi</h2>
+    <div class="grid3">
+      <div class="card">
+        <h3>Dynamic <span class="badge dynamic">DB</span></h3>
+        <ul>
+          <li>Login methods</li><li>Registration field order</li><li>OTP TTL / resend delay</li>
+          <li>Password policy</li><li>UI labels / locale</li><li>Feature toggles</li>
+          <li>Risk thresholds</li><li>Post-login flow policy</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Policy-driven <span class="badge policy">CONTROLLED</span></h3>
+        <ul>
+          <li>New-device OTP required?</li><li>When MFA is triggered</li><li>Max attempts</li>
+          <li>Session lifetime</li><li>Trusted device duration</li><li>Allowed app versions</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Static <span class="badge static">CODE</span></h3>
+        <ul>
+          <li>Password/PIN hashing algorithm</li><li>JWT/signing keys</li><li>Token rotation</li>
+          <li>Authorization enforcement</li><li>Cryptographic randomness</li><li>Biometric SDK</li>
+          <li>Root/jailbreak detection</li><li>TLS / certificate controls</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>3. Backend package architecture — class-by-class</h2>
+    <p class="sub">Modular monolith: auth mustaqil bounded context. Keyin xohlasak microservicega ajratish oson.</p>
+    <div class="pkg">
+<pre>com.cib.auth
+├── api
+│   ├── AuthController
+│   ├── RegistrationController
+│   ├── SessionController
+│   └── dto/
+├── application
+│   ├── RegistrationOrchestrator
+│   ├── LoginOrchestrator
+│   ├── LogoutUseCase
+│   └── RefreshTokenUseCase
+├── domain
+│   ├── AuthStateMachine
+│   ├── RegistrationState
+│   ├── LoginState
+│   ├── UserAccount
+│   ├── DeviceTrust
+│   └── AuthPolicy</pre>
+<pre>com.cib.auth
+├── security
+│   ├── CredentialService
+│   ├── PasswordHasher
+│   ├── PinHasher
+│   ├── TokenService
+│   ├── RefreshTokenService
+│   └── RiskEvaluator
+├── engine
+│   ├── PolicyResolver
+│   ├── ValidationEngine
+│   ├── ValidatorRegistry
+│   └── ActionRegistry
+├── infra
+│   ├── OracleRepositories
+│   ├── RedisOtpStore
+│   ├── SmsGatewayAdapter
+│   ├── MyIdAdapter
+│   └── AuditPublisher</pre>
+    </div>
+    <div class="grid3">
+      <div class="card"><h3>RegistrationOrchestrator</h3><p>Flow ID yaratadi, current state tekshiradi, validatorlarni ishlatadi, keyingi state’ga o‘tkazadi.</p></div>
+      <div class="card"><h3>LoginOrchestrator</h3><p>Credential → risk → device trust → MFA/PIN → session issuance zanjirini boshqaradi.</p></div>
+      <div class="card"><h3>AuthStateMachine</h3><p>Noto‘g‘ri stepni sakrab o‘tishni bloklaydi. Client “step=5” desa ham server current state’ni tekshiradi.</p></div>
+      <div class="card"><h3>PolicyResolver</h3><p>ACTIVE config versionni Oracle/Redis’dan oladi. Draft config production’da ishlamaydi.</p></div>
+      <div class="card"><h3>ValidatorRegistry</h3><p><code>PHONE_FORMAT</code>, <code>PINFL_FORMAT</code> kabi allowlisted validatorlarni map qiladi.</p></div>
+      <div class="card"><h3>CredentialService</h3><p>Password/PIN hash verify. Hash algoritmi DB orqali almashtirilmaydi.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>4. Registration — request-by-request</h2>
+    <p class="sub">Client stepni tanlamaydi; server flow state’ni authoritative saqlaydi.</p>
+    <div class="state">
+      <div class="s blue">START</div><div class="s cyan">PHONE_VERIFIED</div><div class="s purple">IDENTITY_VERIFIED</div><div class="s amber">CREDENTIAL_SET</div><div class="s green">COMPLETED</div>
+    </div>
+
+    <div class="req"><div class="method get">GET</div><div class="reqbody"><b>/api/v1/auth/registration/config</b> → UI fields + policyVersion + requiredCapabilities</div></div>
+    <div class="req"><div class="method post">POST</div><div class="reqbody"><b>/api/v1/auth/registration/start</b> { phone, policyVersion } → flowId + OTP challenge</div></div>
+    <div class="flow">
+      <div class="node blue"><b>1. Normalize</b><span>Phone normalize, generic response policy</span></div>
+      <div class="node green"><b>2. Validate</b><span>Format + registration eligibility</span></div>
+      <div class="node amber"><b>3. OTP issue</b><span>Random code → hash → Redis TTL</span></div>
+      <div class="node purple"><b>4. Notify</b><span>SMS Gateway Adapter</span></div>
+      <div class="node cyan"><b>5. State</b><span>START → OTP_SENT</span></div>
+    </div>
+
+    <div class="req"><div class="method post">POST</div><div class="reqbody"><b>/api/v1/auth/registration/{flowId}/otp/verify</b> { otp } → PHONE_VERIFIED</div></div>
+    <div class="flow">
+      <div class="node amber"><b>Redis lookup</b><span>challenge exists + not expired</span></div>
+      <div class="node red"><b>Attempts</b><span>atomic increment / throttling</span></div>
+      <div class="node green"><b>Hash verify</b><span>constant-time compare</span></div>
+      <div class="node cyan"><b>Transition</b><span>PHONE_VERIFIED</span></div>
+    </div>
+
+    <div class="req"><div class="method post">POST</div><div class="reqbody"><b>/api/v1/auth/registration/{flowId}/identity</b> { pinfl, birthDate, document } → IDENTITY_VERIFIED</div></div>
+    <div class="flow">
+      <div class="node green"><b>Local validators</b><span>PINFL, age, document format</span></div>
+      <div class="node purple"><b>MyID Adapter</b><span>external identity verification</span></div>
+      <div class="node amber"><b>Uniqueness</b><span>phone/PINFL constraints</span></div>
+      <div class="node cyan"><b>State</b><span>IDENTITY_VERIFIED</span></div>
+    </div>
+
+    <div class="req"><div class="method post">POST</div><div class="reqbody"><b>/api/v1/auth/registration/{flowId}/credentials</b> { password, pin } → CREDENTIAL_SET</div></div>
+    <div class="flow">
+      <div class="node blue"><b>Password policy</b><span>Policy from versioned config</span></div>
+      <div class="node green"><b>Password hash</b><span>Argon2id preferred / encoder abstraction</span></div>
+      <div class="node green"><b>PIN hash</b><span>One-way hash; no reversible AES</span></div>
+      <div class="node cyan"><b>Persist</b><span>credential metadata + hash only</span></div>
+    </div>
+
+    <div class="req"><div class="method post">POST</div><div class="reqbody"><b>/api/v1/auth/registration/{flowId}/complete</b> { deviceAttestation } → user + session + refreshToken</div></div>
+    <div class="good"><b>Commit point:</b> User yaratish, credential binding, device binding va audit bir izchil transaction/event boundary bilan yakunlanadi.</div>
+  </section>
+
+  <section class="section">
+    <h2>5. Login — risk-aware state machine</h2>
+    <div class="flow">
+      <div class="node blue"><b>IDENTIFIER</b><span>phone / PINFL / email</span></div>
+      <div class="node green"><b>CREDENTIAL</b><span>password verify</span></div>
+      <div class="node amber"><b>RISK</b><span>device + attempts + signals</span></div>
+      <div class="node purple"><b>CHALLENGE</b><span>OTP/MFA if needed</span></div>
+      <div class="node cyan"><b>SESSION</b><span>access + refresh</span></div>
+    </div>
+    <div class="req"><div class="method post">POST</div><div class="reqbody"><b>/api/v1/auth/login</b> { method, identifier, password, deviceId, appVersion }</div></div>
+    <pre>{
+  "status": "CHALLENGE_REQUIRED",
+  "challengeId": "ch_8f...",
+  "challengeType": "OTP",
+  "expiresIn": 120,
+  "nextAction": {
+    "type": "SHOW_OTP",
+    "uiConfigVersion": 41
+  }
+}</pre>
+    <div class="grid3">
+      <div class="card"><h3>Trusted device</h3><p>Risk past bo‘lsa OTP skip qilinishi mumkin — policy bo‘yicha.</p></div>
+      <div class="card"><h3>New device</h3><p>OTP/MFA + device binding. Device identity authentication factor emas, risk signal sifatida ishlatiladi.</p></div>
+      <div class="card"><h3>Suspicious</h3><p>Throttle, step-up MFA, temporary deny, audit alert. Generic error response saqlanadi.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>6. Token & session modeli</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Access token</h3>
+        <ul><li>Qisqa umr</li><li>API authorization uchun</li><li>Signed, server policy bilan tekshiriladi</li><li>Client secure storage</li></ul>
+      </div>
+      <div class="card">
+        <h3>Refresh token</h3>
+        <ul><li>Rotation</li><li>Reuse detection</li><li>Session/device bilan bog‘langan</li><li>Logout/revoke qilinadi</li></ul>
+      </div>
+    </div>
+    <pre>session
+├── session_id
+├── user_id
+├── device_id
+├── refresh_token_hash
+├── status: ACTIVE | REVOKED | EXPIRED
+├── created_at
+├── last_seen_at
+├── expires_at
+└── risk_level</pre>
+  </section>
+
+  <section class="section">
+    <h2>7. Oracle schema — auth uchun minimal production model</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Table</th><th>Purpose</th><th>Important fields</th><th>Dynamic?</th></tr></thead>
+        <tbody>
+          <tr><td>auth_policy_version</td><td>Versioned policies</td><td>version, status, checksum, approved_by</td><td>Yes</td></tr>
+          <tr><td>auth_policy_item</td><td>OTP/password/session policy</td><td>policy_key, value_json, version_id</td><td>Yes</td></tr>
+          <tr><td>auth_ui_config</td><td>Flutter auth UI</td><td>step, field_type, label_key, order_no, min_app_version</td><td>Yes</td></tr>
+          <tr><td>auth_validation_map</td><td>Allowlisted validator mapping</td><td>field_code, validator_code, order_no</td><td>Yes</td></tr>
+          <tr><td>users</td><td>Account</td><td>id, phone, pinfl, status</td><td>No</td></tr>
+          <tr><td>user_credentials</td><td>Credential hashes</td><td>user_id, password_hash, pin_hash, algo_meta</td><td>No</td></tr>
+          <tr><td>trusted_devices</td><td>Device binding</td><td>device_id, user_id, trust_until, revoked_at</td><td>No</td></tr>
+          <tr><td>auth_sessions</td><td>Refresh/session lifecycle</td><td>session_id, refresh_hash, status, expires_at</td><td>No</td></tr>
+          <tr><td>auth_audit</td><td>Security trace</td><td>event, user_id, ip_hash, device_id, result</td><td>No</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>8. Redis keyspace</h2>
+    <pre>otp:REGISTRATION:{flowId}            TTL 120s
+otp_attempts:{flowId}                 TTL 10m
+auth_flow:{flowId}                    TTL 20m
+login_fail:{normalizedIdentifier}     TTL sliding window
+rate:{ip}:{route}                     TTL bucket
+device_challenge:{challengeId}        TTL 5m
+auth_policy:ACTIVE                    cache
+auth_ui:{version}:{lang}              cache
+refresh_reuse:{tokenFamilyId}         TTL session lifetime
+idempotency:{requestId}               TTL business-defined</pre>
+    <div class="warn"><b>OTP Oracle’da plain text saqlanmaydi.</b> Redis’da faqat hash + metadata; audit esa code’ning o‘zini emas, eventni saqlaydi.</div>
+  </section>
+
+  <section class="section">
+    <h2>9. Config publishing pipeline</h2>
+    <div class="flow">
+      <div class="node blue"><b>DRAFT</b><span>Admin edit</span></div>
+      <div class="node amber"><b>VALIDATED</b><span>Schema + semantic checks</span></div>
+      <div class="node purple"><b>APPROVED</b><span>Maker-checker</span></div>
+      <div class="node green"><b>ACTIVE</b><span>Atomic publish</span></div>
+      <div class="node red"><b>ROLLBACK</b><span>Previous version restore</span></div>
+    </div>
+    <pre>{
+  "policyVersion": 27,
+  "status": "ACTIVE",
+  "checksum": "sha256:...",
+  "effectiveFrom": "2026-08-21T12:00:00Z",
+  "minAppVersion": "4.2.0"
+}</pre>
+  </section>
+
+  <section class="section">
+    <h2>10. Flutter contract</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Flutter bilmaydigan narsa</h3>
+        <ul><li>Business decision</li><li>Account eligibility</li><li>OTP truth</li><li>Authorization</li><li>Password validity server truth</li></ul>
+      </div>
+      <div class="card">
+        <h3>Flutter bilishi shart bo‘lgan narsa</h3>
+        <ul><li>Supported field types</li><li>Navigation/action contract</li><li>Secure storage</li><li>Biometric/device capability</li><li>Schema version compatibility</li></ul>
+      </div>
+    </div>
+    <pre>{
+  "schemaVersion": 3,
+  "policyVersion": 27,
+  "requiredCapabilities": ["OTP_V2","PIN_INPUT_V1"],
+  "steps": [
+    {
+      "id": "PHONE",
+      "fields": [
+        {"type":"phone","name":"phone","required":true}
+      ]
+    }
+  ]
+}</pre>
+  </section>
+
+  <section class="section">
+    <h2>11. Eng muhim failure-case’lar</h2>
+    <div class="grid3">
+      <div class="card red"><h3>OTP brute-force</h3><p>Atomic attempts + per-IP/per-identity throttling + challenge expiration.</p></div>
+      <div class="card red"><h3>User enumeration</h3><p>“Bu telefon mavjud” kabi farqli auth errorlarni login endpointda bermaslik.</p></div>
+      <div class="card red"><h3>Config race</h3><p>Client policyVersion yuboradi; server stale policy bo‘lsa controlled refresh qaytaradi.</p></div>
+      <div class="card red"><h3>Step skipping</h3><p>Client state authoritative emas; server-side state machine transitionni tekshiradi.</p></div>
+      <div class="card red"><h3>Refresh replay</h3><p>Refresh token rotation + family/reuse detection → family revoke.</p></div>
+      <div class="card red"><h3>Provider outage</h3><p>MyID/SMS adapter timeout + retry policy + circuit breaker + safe state.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>12. Final design decision</h2>
+    <div class="good">
+      <b>CIB Auth V2:</b> Backend-driven UI + Versioned Policy Engine + Server-side Auth State Machine + Allowlisted Registry + Redis Ephemeral State + Oracle Durable State + Device/Risk-aware Session Lifecycle.
+    </div>
+    <pre>Flutter
+   ↓ JSON contract
+AuthController
+   ↓
+Registration/Login Orchestrator
+   ↓
+AuthStateMachine
+   ↓
+PolicyResolver ──→ Redis cache ──→ Oracle config
+   ↓
+ValidationEngine ──→ ValidatorRegistry
+   ↓
+Credential / OTP / Device / Risk Services
+   ↓
+Oracle durable state + Redis ephemeral state
+   ↓
+TokenService
+   ↓
+Access token + rotating refresh session</pre>
+    <div class="callout"><b>Eng katta farq:</b> tizim dynamic, lekin “DB nima desa shuni ko‘r-ko‘rona bajaradigan” tizim emas. Dynamic konfiguratsiya faqat serverdagi qat’iy ruxsat berilgan contract va invariantlar ichida harakat qiladi.</div>
+  </section>
+
+  <div class="footer">CIB Auth Architecture V2 · Registration + Login · Production-oriented design</div>
+</div>
+</body>
+</html>

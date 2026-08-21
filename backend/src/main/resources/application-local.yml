@@ -1,0 +1,24 @@
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+
+app:
+  security:
+    otp-pepper: ${APP_OTP_PEPPER:local-dev-otp-pepper-please-replace-000000000000}
+    pin-pepper: ${APP_PIN_PEPPER:local-dev-pin-pepper-please-replace-000000000000}
+    device-pepper: ${APP_DEVICE_PEPPER:local-dev-device-pepper-please-replace-000000000}
+    jwt:
+      allow-ephemeral-keys: true
+  mock:
+    sms:
+      enabled: true
+      fixed-otp: "111111"
+    myid:
+      enabled: true
+
+logging:
+  level:
+    uz.cib.mobile: INFO
